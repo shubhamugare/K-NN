@@ -1,0 +1,3 @@
+let t = Tensor(4, [1.0, 2.0, 2.0, 1.0]) in 
+let b = 5.0 in 
+t
