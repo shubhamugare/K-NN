@@ -63,6 +63,6 @@ module KNN
   rule I1 + I2 => I1 +Float I2
   
   rule <k> toList(F1:Float) => . ... </k> <val> ... .List => ListItem(F1) </val>
-  rule <k> ... toList( ( F1:Float, FL:Floats ) ) => toList(FL) ... </k> <val> ... .List => ListItem(F1) </val>
+  rule <k> toList( ( F1:Float, FL:Floats ) ) => toList(FL) ... </k> <val> ... .List => ListItem(F1) </val> // append at the end
 
 endmodule
