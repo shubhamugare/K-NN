@@ -43,23 +43,26 @@ module KNN
 
   syntax KResult ::= Float | Int 
 
+  syntax KItem ::= toList(Floats)
 
-  rule <k> tensor ( Si:Int , [Fl:Floats] )  => . ...</k> 
+  rule <k> tensor ( Si:Int , [Fl:Floats] )  => toList(Fl) ...</k> 
         <tensors>...
             (.Bag =>         
              <tensorData>
                 <tensorName> Name </tensorName>
                 <size> ListItem(Si) </size>
-                <val> toList(Fl) </val>
+                <val> .List </val>
              </tensorData>
              )
-        ...</tensors>
+        ...
+       </tensors>
         
   rule let X:Id = E1:Exp in E2:Exp => E2[E1 / X] 
 
   rule I1 * I2 => I1 *Float I2
   rule I1 + I2 => I1 +Float I2
   
-  rule toList(F1:Float, FL:Floats) => F1 toList(FL)  
+  rule <k> toList(F1:Float) => . ... </k> <val> ... .List => ListItem(F1) </val>
+  rule <k> ... toList( ( F1:Float, FL:Floats ) ) => toList(FL) ... </k> <val> ... .List => ListItem(F1) </val>
 
 endmodule
