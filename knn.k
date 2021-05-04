@@ -70,7 +70,7 @@ module KNN
   rule <k> toList(F1:Float) => Name ... </k> <tensorName> Name </tensorName> <val> ... .List => ListItem(F1)  </val>
   rule <k> toList( ( F1:Float, FL:Floats ) ) => toList(FL) ... </k> <val> ... .List => ListItem(F1) </val> // append at the end
 
-  rule <k> ... relu(E:Id) => Name ... </k> <tensorData> <tensorName> Name </tensorName> <val> L => .List </val> <tempval> _ => L </tempval>... </tensorData> 
+  rule <k> relu(E:Id) => Name ... </k> <tensorData> <tensorName> Name </tensorName> <val> L => .List </val> <tempval> _ => L </tempval>... </tensorData> 
   rule <k> Name ... </k> <tensorData> <tensorName> Name </tensorName> <val> ... .List => ListItem(F1) </val> <tempval> ListItem(F1) => .List ... </tempval>... </tensorData> requires F1 >=Float 0.0
   rule <k> Name ... </k> <tensorData> <tensorName> Name </tensorName> <val> ... .List =>ListItem(0.0) </val> <tempval> ListItem(F1) => .List ... </tempval>... </tensorData> requires F1 >=Float 0.0
 
