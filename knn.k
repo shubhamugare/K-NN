@@ -12,12 +12,15 @@ module KNN-SYNTAX
                | "(" Exp ")"           [bracket]
                > Exp "*" Exp           [strict, left]
                > Exp "+" Exp           [strict, left]
-               | "tensor" "(" Int "," FloatList ")"     
+               | "tensor" "(" Ints "," FloatList ")"     
+               | "relu" "(" Exp ")"     
                > "let" Id "=" Exp "in" Exp [strict(2)] 
                
   syntax FloatList ::= "[" Floats "]"
   syntax Floats ::= Float 
                   | Float "," Floats
+  syntax Ints ::= Int 
+                  | Int "," Ints
 
   
            
@@ -37,6 +40,7 @@ module KNN
                         <tensorName color="green"> Name </tensorName>
                         <size color="green"> .List </size>
                         <val color="green"> .List </val>
+                        <tempval color="green"> .List </tempval>
                      </tensorData>
                   </tensors>
                 </T>
@@ -45,13 +49,14 @@ module KNN
 
   syntax KItem ::= toList(Floats)
 
-  rule <k> tensor ( Si:Int , [Fl:Floats] )  => toList(Fl) ...</k> 
+  rule <k> tensor ( Si:Ints , [Fl:Floats] )  => toList(Fl) ...</k> 
         <tensors>...
             (.Bag =>         
              <tensorData>
                 <tensorName> Name </tensorName>
                 <size> ListItem(Si) </size>
                 <val> .List </val>
+                ...
              </tensorData>
              )
         ...
@@ -62,7 +67,13 @@ module KNN
   rule I1 * I2 => I1 *Float I2
   rule I1 + I2 => I1 +Float I2
   
-  rule <k> toList(F1:Float) => . ... </k> <val> ... .List => ListItem(F1) </val>
+  rule <k> toList(F1:Float) => Name ... </k> <tensorName> Name </tensorName> <val> ... .List => ListItem(F1)  </val>
   rule <k> toList( ( F1:Float, FL:Floats ) ) => toList(FL) ... </k> <val> ... .List => ListItem(F1) </val> // append at the end
+
+  rule <k> ... relu(E:Id) => Name ... </k> <tensorData> <tensorName> Name </tensorName> <val> L => .List </val> <tempval> _ => L </tempval>... </tensorData> 
+  rule <k> Name ... </k> <tensorData> <tensorName> Name </tensorName> <val> ... .List => ListItem(F1) </val> <tempval> ListItem(F1) => .List ... </tempval>... </tensorData> requires F1 >=Float 0.0
+  rule <k> Name ... </k> <tensorData> <tensorName> Name </tensorName> <val> ... .List =>ListItem(0.0) </val> <tempval> ListItem(F1) => .List ... </tempval>... </tensorData> requires F1 >=Float 0.0
+
+
 
 endmodule
