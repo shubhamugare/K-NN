@@ -102,6 +102,6 @@ module KNN
 
 
   // Result, TODO: fix this
-  rule <k> E1:Id => V </k> <tensorData> <tensorName> E1 </tensorName> <size> _ </size> <val> V </val> <tempval> .List </tempval>... </tensorData>
+  rule <k> E1:Id => . </k> <tensorData> <tensorName> E1 </tensorName> <size> _ </size> <val> _ </val> <tempval> .List </tempval>... </tensorData>
 
 endmodule
