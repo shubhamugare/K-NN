@@ -21,7 +21,9 @@ module KNN-SYNTAX
                | "(" Exp ")"           [bracket]
                > Exp "*" Exp           [strict, left]
                > Exp "+" Exp           [strict, left]
-               | "tensor" "(" Ints "," FloatList ")"     
+               | "tensor" "(" Ints "," FloatList ")"
+               | "init_array" "(" Ints ")" 
+               | Exp "[" Ints "]"      [strict(1)]
                | "relu" "(" Exp ")"     
                > "let" Id "=" Exp "in" Exp // [strict] 
                
@@ -48,6 +50,9 @@ module KNN
 ```k
   configuration <T color="red">
                   <k color="white"> $PGM:Exp </k>
+                  <env> .Map </env>
+                  <store> .Map </store>
+                  <nextLoc> 0 </nextLoc>
                   <tensors color="green">        
                      <tensorData multiplicity="*" type="Map" color="green">
                         <tensorName color="green"> Name </tensorName>
@@ -90,6 +95,31 @@ module KNN
   rule <k> toList(X, (F1:Float, FL:Floats)) => toList(X, FL) ... </k> <tensorData> <tensorName> X </tensorName> <val> ... .List => ListItem(F1) </val> ... </tensorData>  // append at the end
 ```
 
+## Array (to be tensor)
+```k
+  
+  syntax Val ::= array(Int, Int) | Float | Int
+  syntax Exp ::= Val
+  syntax KResult ::= Val
+
+  rule <k> let X = init_array(N:Int) in E:Exp  => E ...</k>
+       <env> Env => Env[X <- L] </env>
+       <store>... .Map => L |-> array(L +Int 1, N)
+                          (L +Int 1) ... (L +Int N) |-> 0 ...</store>
+       <nextLoc> L:Int => L +Int 1 +Int N </nextLoc>
+      when N >=Int 0
+
+  rule <k> X:Id => V ...</k>
+       <env>... X |-> L ...</env>
+       <store>... L |-> V:Val ...</store>  [lookup] 
+  
+  syntax Exp ::= lookup(Int)
+
+  rule array(L,_)[N:Int] => lookup(L +Int N)      [structural, anywhere]                     
+  rule <k> lookup(L) => V ...</k> <store>... L |-> V:Val ...</store>  [lookup]
+
+```
+
 ## Relu
 
 ```k
@@ -121,6 +151,17 @@ module KNN
 
   // Result, TODO: fix this
   rule <k> E1:Id => . </k> <tensorData> <tensorName> E1 </tensorName> <size> _ </size> <val> _ </val> <tempval> .List </tempval>... </tensorData>
+```
+
+## Utility functions
+
+```k
+
+  syntax Map ::= Int "..." Int "|->" K [function]
+
+  rule N...M |-> _ => .Map  requires N >Int M
+  rule N...M |-> K => N |-> K (N +Int 1)...M |-> K  requires N <=Int M
+
 
 endmodule
 ```
