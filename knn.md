@@ -1,4 +1,12 @@
+## Authors
+Zixin Huang (UIUC)
+Shubham Ugare (UIUC)
+
+## Syntax
+
+```k
 require "substitution.md"
+
 
 module KNN-SYNTAX
   imports DOMAINS-SYNTAX
@@ -22,18 +30,22 @@ module KNN-SYNTAX
                   | Float "," Floats
   syntax Ints ::= Int 
                   | Int "," Ints
-
-  
-           
 endmodule
+```
 
+## Semantics
 
+```k
 module KNN
   imports KNN-SYNTAX
   imports DOMAINS
   imports SUBSTITUTION
   imports FLOAT
+```
 
+## Configuration
+
+```k
   configuration <T color="red">
                   <k color="white"> $PGM:Exp </k>
                   <tensors color="green">        
@@ -45,7 +57,10 @@ module KNN
                      </tensorData>
                   </tensors>
                 </T>
+```
 
+## Basic operations
+```k
   syntax KResult ::= Float | Int 
 
   // Scalar in let
@@ -73,8 +88,11 @@ module KNN
         
   rule <k> toList(X, F1:Float) => . ... </k> <tensorData> <tensorName> X </tensorName> <val> ... .List => ListItem(F1)  </val> ... </tensorData> 
   rule <k> toList(X, (F1:Float, FL:Floats)) => toList(X, FL) ... </k> <tensorData> <tensorName> X </tensorName> <val> ... .List => ListItem(F1) </val> ... </tensorData>  // append at the end
+```
 
-  // Relu in let
+## Relu
+
+```k
   syntax KItem ::= reluHelper(Id) 
   rule <k> let X:Id = relu(E:Id) in E2 => ( reluHelper(X) ~> E2 ) ... </k> 
         <tensors>...
@@ -105,3 +123,4 @@ module KNN
   rule <k> E1:Id => . </k> <tensorData> <tensorName> E1 </tensorName> <size> _ </size> <val> _ </val> <tempval> .List </tempval>... </tensorData>
 
 endmodule
+```
