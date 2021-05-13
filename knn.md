@@ -17,13 +17,13 @@ module KNN-SYNTAX
 
   syntax Exp ::= Float
                | Int
-               | Id                
+               | Id          
+               | Exp "[" Ints "]"      [strict(1)]      
                | "(" Exp ")"           [bracket]
                > Exp "*" Exp           [strict, left]
                > Exp "+" Exp           [strict, left]
                | "tensor" "(" Ints "," FloatList ")"
                | "initArray" "(" Ints ")" 
-               | Exp "[" Ints "]"      [strict(1)]
                | "relu" "(" Exp ")"     
                > "let" Exp "=" Exp "in" Exp  
                
@@ -102,12 +102,26 @@ module KNN
   syntax Exp ::= Val
   syntax KResult ::= Val
 
-  rule <k> let X = initArray(N:Int) in E:Exp  => E ...</k>
+  syntax Exp ::= defineArray(Exp, Ints) 
+  syntax Exp ::= "defineArrayHelper" "(" Id "," Int "..." Int "," Ints ")"
+
+  rule <k> let X = initArray(Is:Ints) in E:Exp  => defineArray(X, Is) ~> E ...</k>
+
+  rule <k> defineArray(X:Id,N:Int) => . ...</k>
        <env> Env => Env[X <- L] </env>
        <store>... .Map => L |-> array(L +Int 1, N)
                           (L +Int 1) ... (L +Int N) |-> 0 ...</store>
        <nextLoc> L:Int => L +Int 1 +Int N </nextLoc>
       when N >=Int 0
+
+  rule <k> defineArray(X:Id, I:Int, Rest:Ints) => defineArray(X, I) ~> defineArrayHelper(X, 0 ...I, Rest:Ints) ...</k> 
+  
+  syntax Id ::= "$1"
+  rule <k> defineArrayHelper(X, I...J, Rest) => defineArray($1, Rest) ~> storeVal(X[I], $1) ~> defineArrayHelper(X, (I +Int 1)...J, Rest) ...</k>
+      when I <Int J 
+
+  rule <k> defineArrayHelper(X, I...I, Rest) => defineArray($1, Rest) ~> storeVal(X[I], $1) ...</k>
+
 
   rule <k> X:Id => V ...</k>
        <env>... X |-> L ...</env>
@@ -115,16 +129,30 @@ module KNN
   
   syntax Exp ::= lookup(Int)
 
-  rule array(L,_)[N:Int] => lookup(L +Int N)      [structural, anywhere]                     
+  rule array(L,_)[N:Int] => lookup(L +Int N)      [structural, anywhere]
+  rule array(L,I)[N:Int, Rest:Ints] => array(L,I)[N:Int][Rest:Ints]    [structural, anywhere]                  
   rule <k> lookup(L) => V ...</k> <store>... L |-> V:Val ...</store>  [lookup]
 
-  syntax Exp ::= storeVal(Exp, Val) 
+  syntax Exp ::= storeVal(Exp, Exp) 
 
-  rule <k> let X:Id [I:Int] = V:Val in E:Exp => storeVal(X[I], V) ~> E ...</k>
+  rule <k> let X:Id [I:Ints] = V:Val in E:Exp => storeVal(X[I], V) ~> E ...</k>
 
-  rule <k> storeVal(X[I], V) => . ...</k>
-       <env>... X |-> L ...</env>
-       <store>... (L +Int I +Int 1) |-> (_ => V) ...</store>    
+  context storeVal(_, HOLE)
+  context storeVal(HOLE[_:Int, _:Ints],_)
+
+  rule storeVal(X[I:Int, Rest:Ints], V:Val) => storeVal(X[I][Rest], V)
+
+  rule <k> storeVal(X[I:Int], V) => . ...</k>
+        <env>... X |-> L ...</env>
+        <store>... (L +Int I +Int 1) |-> (_ => V) ...</store>
+
+  rule <k> storeVal(lookup(L)[I:Int], V) => storeAtVal(T +Int I, V) ...</k>
+       <store>... L |-> array(T,_) ...</store> 
+
+  syntax Exp ::= storeAtVal(Int, Val)
+    
+  rule <k> storeAtVal(L:Int, V:Val) => . ...</k>
+       <store>... L |-> (_ => V) ...</store> 
 
          
 ```
