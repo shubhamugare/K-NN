@@ -24,7 +24,8 @@ module KNN-SYNTAX
                > Exp "+" Exp           [strict, left]
                | "tensor" "(" Ints "," FloatList ")"
                | "initArray" "(" Ints ")" 
-               | "relu" "(" Exp ")"     
+               | "relu" "(" Exp ")"  
+               | "reluArray" "(" Exp ")"    
                > "let" Exp "=" Exp "in" Exp  
                
   syntax FloatList ::= "[" Floats "]"
@@ -53,6 +54,7 @@ module KNN
                   <env> .Map </env>
                   <store> .Map </store>
                   <nextLoc> 0 </nextLoc>
+                  <shape> .Map </shape>
                   <tensors color="green">        
                      <tensorData multiplicity="*" type="Map" color="green">
                         <tensorName color="green"> Name </tensorName>
@@ -98,7 +100,7 @@ module KNN
 ## Array (to be tensor)
 ```k
   
-  syntax Val ::= array(Int, Int) | Float | Int 
+  syntax Val ::= array(Int, Int) | Float | Ints 
   syntax Exp ::= Val
   syntax KResult ::= Val
 
@@ -106,6 +108,7 @@ module KNN
   syntax Exp ::= "defineArrayHelper" "(" Id "," Int "..." Int "," Ints ")"
 
   rule <k> let X = initArray(Is:Ints) in E:Exp  => defineArray(X, Is) ~> E ...</k>
+       <shape>... .Map => X |-> (Is) ...</shape> 
 
   rule <k> defineArray(X:Id,N:Int) => . ...</k>
        <env> Env => Env[X <- L] </env>
@@ -189,6 +192,33 @@ module KNN
   // Result, TODO: fix this
   rule <k> E1:Id => . </k> <tensorData> <tensorName> E1 </tensorName> <size> _ </size> <val> _ </val> <tempval> .List </tempval>... </tensorData>
 ```
+
+## Relu (For arrays)
+```k
+  rule <k> let X:Id = reluArray(Y:Id) in E => defineArray(X,Is) ~> reluArrayHelper(Y, X, Is) ~> E ... </k> 
+       <shape>... Y |-> Is ...</shape> 
+
+  syntax Exp ::= reluArrayHelper(Exp, Exp)     
+  syntax Exp ::= reluArrayHelper(Exp, Exp, Ints)
+  syntax Exp ::= "reluArrayHelper" "(" Exp "," Exp "," Int "..." Int "," Ints ")"
+  syntax Exp ::= "reluArrayHelper" "(" Exp "," Exp "," Int "..." Int ")"
+
+  rule reluArrayHelper(Y, X, I:Int, Is:Ints) => reluArrayHelper(Y, X, 0 ...I, Is) 
+  rule reluArrayHelper(Y, X, I:Int) => reluArrayHelper(Y, X, 0 ...I)
+
+  rule <k> reluArrayHelper(Y, X, I...J:Int, Is:Ints) => reluArrayHelper(Y[I], X[I], Is:Ints) ~> reluArrayHelper(Y, X, (I +Int 1)...J:Int, Is:Ints) ...</k>     
+    when I <Int J
+  
+  rule <k> reluArrayHelper(Y, X, I...J:Int) => reluArrayHelper(Y[I], X[I]) ~> reluArrayHelper(Y, X, (I +Int 1)...J:Int) ...</k>     
+    when I <Int J
+
+  rule <k> reluArrayHelper(_, _, I...I:Int, _:Ints) => . ...</k>
+  rule <k> reluArrayHelper(_, _, I...I:Int) => . ...</k>
+
+  rule reluArrayHelper(E1:Exp, E2:Exp) => let E1 = E2 in 0
+
+```
+
 
 ## Utility functions
 
