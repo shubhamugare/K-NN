@@ -22,10 +22,10 @@ module KNN-SYNTAX
                > Exp "*" Exp           [strict, left]
                > Exp "+" Exp           [strict, left]
                | "tensor" "(" Ints "," FloatList ")"
-               | "init_array" "(" Ints ")" 
+               | "initArray" "(" Ints ")" 
                | Exp "[" Ints "]"      [strict(1)]
                | "relu" "(" Exp ")"     
-               > "let" Id "=" Exp "in" Exp // [strict] 
+               > "let" Exp "=" Exp "in" Exp  
                
   syntax FloatList ::= "[" Floats "]"
   syntax Floats ::= Float 
@@ -98,11 +98,11 @@ module KNN
 ## Array (to be tensor)
 ```k
   
-  syntax Val ::= array(Int, Int) | Float | Int
+  syntax Val ::= array(Int, Int) | Float | Int 
   syntax Exp ::= Val
   syntax KResult ::= Val
 
-  rule <k> let X = init_array(N:Int) in E:Exp  => E ...</k>
+  rule <k> let X = initArray(N:Int) in E:Exp  => E ...</k>
        <env> Env => Env[X <- L] </env>
        <store>... .Map => L |-> array(L +Int 1, N)
                           (L +Int 1) ... (L +Int N) |-> 0 ...</store>
@@ -118,6 +118,15 @@ module KNN
   rule array(L,_)[N:Int] => lookup(L +Int N)      [structural, anywhere]                     
   rule <k> lookup(L) => V ...</k> <store>... L |-> V:Val ...</store>  [lookup]
 
+  syntax Exp ::= storeVal(Exp, Val) 
+
+  rule <k> let X:Id [I:Int] = V:Val in E:Exp => storeVal(X[I], V) ~> E ...</k>
+
+  rule <k> storeVal(X[I], V) => . ...</k>
+       <env>... X |-> L ...</env>
+       <store>... (L +Int I +Int 1) |-> (_ => V) ...</store>    
+
+         
 ```
 
 ## Relu
