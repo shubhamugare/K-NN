@@ -1,6 +1,6 @@
 ## Authors
-Zixin Huang (UIUC)
 Shubham Ugare (UIUC)
+Zixin Huang (UIUC)
 
 ## Syntax
 
@@ -78,23 +78,23 @@ module KNN
   rule I1 + I2 => I1 +Float I2
 
   // Tensor in let
-  syntax KItem ::= toList(Id, Floats) // add Id in toList to track which tensor to modify
+  // syntax KItem ::= toList(Id, Floats) // add Id in toList to track which tensor to modify
 
-  rule <k> ( let X:Id = tensor ( Si:Ints , [Fl:Floats] ) in E2:Exp ) => toList(X, Fl) ~> E2 ...</k> 
-        <tensors>...
-            (.Bag =>         
-             <tensorData>
-                <tensorName> X </tensorName>
-                <size> ListItem(Si) </size>
-                <val> .List </val>
-                ...
-             </tensorData>
-             )
-        ...
-       </tensors>
-        
-  rule <k> toList(X, F1:Float) => . ... </k> <tensorData> <tensorName> X </tensorName> <val> ... .List => ListItem(F1)  </val> ... </tensorData> 
-  rule <k> toList(X, (F1:Float, FL:Floats)) => toList(X, FL) ... </k> <tensorData> <tensorName> X </tensorName> <val> ... .List => ListItem(F1) </val> ... </tensorData>  // append at the end
+  // rule <k> ( let X:Id = tensor ( Si:Ints , [Fl:Floats] ) in E2:Exp ) => toList(X, Fl) ~> E2 ...</k> 
+  //       <tensors>...
+  //           (.Bag =>         
+  //            <tensorData>
+  //               <tensorName> X </tensorName>
+  //               <size> ListItem(Si) </size>
+  //               <val> .List </val>
+  //               ...
+  //            </tensorData>
+  //            )
+  //       ...
+  //      </tensors>
+  //       
+  // rule <k> toList(X, F1:Float) => . ... </k> <tensorData> <tensorName> X </tensorName> <val> ... .List => ListItem(F1)  </val> ... </tensorData> 
+  // rule <k> toList(X, (F1:Float, FL:Floats)) => toList(X, FL) ... </k> <tensorData> <tensorName> X </tensorName> <val> ... .List => ListItem(F1) </val> ... </tensorData>  // append at the end
 ```
 
 ## Array (to be tensor)
@@ -158,39 +158,6 @@ module KNN
        <store>... L |-> (_ => V) ...</store> 
 
          
-```
-
-## Relu
-
-```k
-  syntax KItem ::= reluHelper(Id) 
-  rule <k> let X:Id = relu(E:Id) in E2 => ( reluHelper(X) ~> E2 ) ... </k> 
-        <tensors>...
-             <tensorData>
-                <tensorName> E </tensorName>
-                <size> S </size>
-                <val> L </val>
-                ...
-             </tensorData>
-            (.Bag =>         
-             <tensorData>
-                <tensorName> X </tensorName>
-                <size> S </size>
-                <val> .List </val>
-                <tempval> L </tempval>
-                ...
-             </tensorData>
-             )
-        ...
-       </tensors>
-
-  rule <k> reluHelper(X) ... </k> <tensorData> <tensorName> X </tensorName> <size> _ </size> <val> ... .List => ListItem(F1)  </val> <tempval> ListItem(F1) => .List ... </tempval>... </tensorData> requires F1 >=Float 0.0
-  rule <k> reluHelper(X) ... </k> <tensorData> <tensorName> X </tensorName> <size> _ </size> <val> ... .List => ListItem(0.0) </val> <tempval> ListItem(F1) => .List ... </tempval>... </tensorData> requires F1 <Float 0.0
-  rule <k> reluHelper(X) => . ... </k> <tensorData> <tensorName> X </tensorName> <size> _ </size>  <val> _ </val> <tempval> .List </tempval>... </tensorData>
-
-
-  // Result, TODO: fix this
-  rule <k> E1:Id => . </k> <tensorData> <tensorName> E1 </tensorName> <size> _ </size> <val> _ </val> <tempval> .List </tempval>... </tensorData>
 ```
 
 ## Relu (For arrays)
