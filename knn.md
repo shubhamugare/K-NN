@@ -22,12 +22,15 @@ module KNN-SYNTAX
                | "(" Exp ")"           [bracket]
                > Exp "*" Exp           [strict, left]
                > Exp "+" Exp           [strict, left]
-               | "tensor" "(" Ints "," FloatList ")"
-               | "initArray" "(" Ints ")" 
-               | "relu" "(" Exp ")"  
-               | "reluArray" "(" Exp ")"    
-               > "let" Exp "=" Exp "in" Exp  
-               
+               > "let" Exp "=" Exp "in" Exp  [strict(2)]
+               >  "let" Exp "=" Func "in" Exp 
+  
+
+  syntax Func ::=   "tensor" "(" Ints "," FloatList ")"
+                   | "initArray" "(" Ints ")" 
+                   | "relu" "(" Exp ")"  
+                   | "reluArray" "(" Exp ")"             
+
   syntax FloatList ::= "[" Floats "]"
   syntax Floats ::= Float 
                   | Float "," Floats
@@ -55,14 +58,14 @@ module KNN
                   <store> .Map </store>
                   <nextLoc> 0 </nextLoc>
                   <shape> .Map </shape>
-                  <tensors color="green">        
-                     <tensorData multiplicity="*" type="Map" color="green">
-                        <tensorName color="green"> Name </tensorName>
-                        <size color="green"> .List </size>
-                        <val color="green"> .List </val>
-                        <tempval color="olive"> .List </tempval>
-                     </tensorData>
-                  </tensors>
+                //  <tensors color="green">        
+                //     <tensorData multiplicity="*" type="Map" color="green">
+                //        <tensorName color="green"> Name </tensorName>
+                //        <size color="green"> .List </size>
+                //       <val color="green"> .List </val>
+                //        <tempval color="olive"> .List </tempval>
+                //     </tensorData>
+                //  </tensors>
                 </T>
 ```
 
@@ -73,6 +76,7 @@ module KNN
   // Scalar in let
   rule let X:Id = E1:Float in E2:Exp => E2[E1 / X] 
   rule let X:Id = E1:Int in E2:Exp => E2[E1 / X] 
+ // rule <k> let X:Id = E:Exp in E1:Exp => storeVal(X, E) ~> E1...</k>
 
   rule I1 * I2 => I1 *Float I2
   rule I1 + I2 => I1 +Float I2
@@ -113,7 +117,7 @@ module KNN
   rule <k> defineArray(X:Id,N:Int) => . ...</k>
        <env> Env => Env[X <- L] </env>
        <store>... .Map => L |-> array(L +Int 1, N)
-                          (L +Int 1) ... (L +Int N) |-> 0 ...</store>
+                          (L +Int 1) ... (L +Int N) |-> 0.0 ...</store>
        <nextLoc> L:Int => L +Int 1 +Int N </nextLoc>
       when N >=Int 0
 
@@ -138,7 +142,7 @@ module KNN
 
   syntax Exp ::= storeVal(Exp, Exp) 
 
-  rule <k> let X:Id [I:Ints] = V:Val in E:Exp => storeVal(X[I], V) ~> E ...</k>
+  rule <k> let X:Id [Is:Ints] = E:Exp in E1:Exp => storeVal(X[Is], E) ~> E1...</k>
 
   context storeVal(_, HOLE)
   context storeVal(HOLE[_:Int, _:Ints],_)
@@ -182,8 +186,19 @@ module KNN
   rule <k> reluArrayHelper(_, _, I...I:Int, _:Ints) => . ...</k>
   rule <k> reluArrayHelper(_, _, I...I:Int) => . ...</k>
 
-  rule reluArrayHelper(E1:Exp, E2:Exp) => let E1 = E2 in 0
+  //rule reluArrayHelper(E1:Exp[I:Int], E2:Exp[J:Int]) => reluArrayHelper(fun(E1:Exp[I:Int]), fun(E2:Exp[J:Int]))
+  //context reluArrayHelper(HOLE, HOLE)
+  rule reluArrayHelper(E1:Exp[I:Int], E2:Exp[J:Int]) => let E2[J] = E1[I] in 0
 
+  rule let E:Exp[I:Int][J:Int] = E2:Exp in E3:Exp => let E:Exp[I,J] = E2:Exp in E3:Exp
+//  rule E:Exp[I:Int][Is:Ints]) => E[I, Is]) 
+//  rule X:Id[Is:Ints]) => X:Id[Is:Ints] 
+
+ // syntax Exp ::= "something" [token]
+
+  rule <k> 0 => . ...</k>
+
+  //rule reluArrayHelper()
 ```
 
 
@@ -196,6 +211,10 @@ module KNN
   rule N...M |-> _ => .Map  requires N >Int M
   rule N...M |-> K => N |-> K (N +Int 1)...M |-> K  requires N <=Int M
 
+  syntax Exp::= fun(Exp)
+  rule fun(E:Exp[I:Int][J:Int]) => fun(E[I,J])   [function]
+  rule fun(E:Exp[I:Int][Is:Ints]) => fun(E[I, Is]) [function]
+  rule fun(X:Id[Is:Ints]) => X:Id[Is:Ints] [function]
 
 endmodule
 ```
