@@ -20,6 +20,8 @@ module KNN-SYNTAX
                | Id          
                | Exp "[" Ints "]"      [strict(1)]      
                | "(" Exp ")"           [bracket]
+               | "max" "(" Exp "," Exp ")"  [strict]
+               | "min" "(" Exp "," Exp ")"  [strict]
                > Exp "*" Exp           [strict, left]
                > Exp "+" Exp           [strict, left]
                > "let" Exp "=" Exp "in" Exp  [strict(2)]
@@ -30,6 +32,7 @@ module KNN-SYNTAX
                    | "initArray" "(" Ints ")" 
                    | "relu" "(" Exp ")"  
                    | "reluArray" "(" Exp ")"             
+                   
 
   syntax FloatList ::= "[" Floats "]"
   syntax Floats ::= Float 
@@ -190,7 +193,7 @@ module KNN
   //context reluArrayHelper(HOLE, HOLE)
   rule reluArrayHelper(E1:Exp[I:Int], E2:Exp[J:Int]) => let E2[J] = E1[I] in 0
 
-  rule let E:Exp[I:Int][J:Int] = E2:Exp in E3:Exp => let E:Exp[I,J] = E2:Exp in E3:Exp
+  rule let E:Exp[I:Int][J:Int] = E2:Exp in E3:Exp => let E:Exp[I,J] = max(E2:Exp, 0.0) in E3:Exp
 //  rule E:Exp[I:Int][Is:Ints]) => E[I, Is]) 
 //  rule X:Id[Is:Ints]) => X:Id[Is:Ints] 
 
@@ -201,6 +204,23 @@ module KNN
   //rule reluArrayHelper()
 ```
 
+## Min and Max
+
+```k
+
+rule min(A:Float, B:Float) => A 
+      when A <Float B
+
+rule min(A:Float, B:Float) => B 
+      when A >=Float B
+
+rule max(A:Float, B:Float) => B 
+      when A <Float B
+
+rule max(A:Float, B:Float) => A 
+      when A >=Float B
+
+```
 
 ## Utility functions
 
