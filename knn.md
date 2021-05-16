@@ -22,6 +22,7 @@ module KNN-SYNTAX
                | "(" Exp ")"           [bracket]
                | "max" "(" Exp "," Exp ")"  [strict]
                | "min" "(" Exp "," Exp ")"  [strict]
+               | "ArgMax" "(" Exp ")"       // expects a vector
                > Exp "*" Exp           [strict, left]
                > Exp "+" Exp           [strict, left]
                > "let" Exp "=" Exp "in" Exp  [strict(2)]
@@ -31,7 +32,8 @@ module KNN-SYNTAX
   syntax Func ::=   "tensor" "(" Ints "," FloatList ")"
                    | "initArray" "(" Ints ")" 
                    | "relu" "(" Exp ")"  
-                   | "reluArray" "(" Exp ")"             
+                   | "reluArray" "(" Exp ")"
+
                    
 
   syntax FloatList ::= "[" Floats "]"
@@ -219,6 +221,30 @@ rule max(A:Float, B:Float) => B
 
 rule max(A:Float, B:Float) => A 
       when A >=Float B
+
+```
+
+## Argmax
+It takes a vector as an argument and returns the index of largest element.
+
+```k
+
+rule <k> ArgMax(X:Id) => ArgMaxHelper(X, 0 ...I, 0.0, 0) ...</k>
+     <shape>... X |-> I:Int ...</shape>
+
+syntax Exp ::= "ArgMaxHelper" "(" Id "," Int "..." Int "," Float "," Int ")"
+
+rule <k> ArgMaxHelper(X, I...J, F:Float, _:Int) => ArgMaxHelper(X, (I +Int 1)...J, F2, I)  ...</k>
+     <env>... X|->L ...</env>
+     <store>... (L +Int I +Int 1)|-> F2 ...</store>
+    when F2 >Float F andBool J >Int I
+
+rule <k> ArgMaxHelper(X, I...J, F:Float, II:Int) => ArgMaxHelper(X, (I +Int 1)...J, F, II)  ...</k>
+     <env>... X|->L ...</env>
+     <store>... (L +Int I +Int 1)|-> F2 ...</store>
+    when F2 <Float F andBool J >Int I
+
+  rule <k> ArgMaxHelper(_, I...I, _:Float, II:Int) => II ...</k>
 
 ```
 
