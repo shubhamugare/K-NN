@@ -1,4 +1,4 @@
-let t = initArray(4) in 
+let t = initTensor(4) in 
 let t[2] = 4.0 in
 let b = 5.0 in 
 t[2]

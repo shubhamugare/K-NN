@@ -1,5 +1,7 @@
 ## Authors
+
 Shubham Ugare (UIUC)
+
 Zixin Huang (UIUC)
 
 ## Syntax
@@ -29,14 +31,13 @@ module KNN-SYNTAX
                >  "let" Exp "=" Func "in" Exp 
   
 
-  syntax Func ::=   "tensor" "(" Ints "," FloatList ")"
-                   | "initArray" "(" Ints ")" 
+  syntax Func ::=  "initTensor" "(" Ints ")" 
                    | "relu" "(" Exp ")"  
-                   | "reluArray" "(" Exp ")"
+                   | "reluTensor" "(" Exp ")"
                    | "tanh" "(" Exp ")"  
-                   | "tanhArray" "(" Exp ")"  
+                   | "tanhTensor" "(" Exp ")"  
                    | "sigmoid" "(" Exp ")"  
-                   | "sigmoidArray" "(" Exp ")"  
+                   | "sigmoidTensor" "(" Exp ")"  
 
                    
 
@@ -110,33 +111,33 @@ module KNN
   // rule <k> toList(X, (F1:Float, FL:Floats)) => toList(X, FL) ... </k> <tensorData> <tensorName> X </tensorName> <val> ... .List => ListItem(F1) </val> ... </tensorData>  // append at the end
 ```
 
-## Array (to be tensor)
+## Tensor 
 ```k
   
-  syntax Val ::= array(Int, Int) | Float | Ints 
+  syntax Val ::= tensor(Int, Int) | Float | Ints 
   syntax Exp ::= Val
   syntax KResult ::= Val
 
-  syntax Exp ::= defineArray(Exp, Ints) 
-  syntax Exp ::= "defineArrayHelper" "(" Id "," Int "..." Int "," Ints ")"
+  syntax Exp ::= defineTensor(Exp, Ints) 
+  syntax Exp ::= "defineTensorHelper" "(" Id "," Int "..." Int "," Ints ")"
 
-  rule <k> let X = initArray(Is:Ints) in E:Exp  => defineArray(X, Is) ~> E ...</k>
+  rule <k> let X = initTensor(Is:Ints) in E:Exp  => defineTensor(X, Is) ~> E ...</k>
        <shape>... .Map => X |-> (Is) ...</shape> 
 
-  rule <k> defineArray(X:Id,N:Int) => . ...</k>
+  rule <k> defineTensor(X:Id,N:Int) => . ...</k>
        <env> Env => Env[X <- L] </env>
-       <store>... .Map => L |-> array(L +Int 1, N)
+       <store>... .Map => L |-> tensor(L +Int 1, N)
                           (L +Int 1) ... (L +Int N) |-> 0.0 ...</store>
        <nextLoc> L:Int => L +Int 1 +Int N </nextLoc>
       when N >=Int 0
 
-  rule <k> defineArray(X:Id, I:Int, Rest:Ints) => defineArray(X, I) ~> defineArrayHelper(X, 0 ...I, Rest:Ints) ...</k> 
+  rule <k> defineTensor(X:Id, I:Int, Rest:Ints) => defineTensor(X, I) ~> defineTensorHelper(X, 0 ...I, Rest:Ints) ...</k> 
   
   syntax Id ::= "$1"
-  rule <k> defineArrayHelper(X, I...J, Rest) => defineArray($1, Rest) ~> storeVal(X[I], $1) ~> defineArrayHelper(X, (I +Int 1)...J, Rest) ...</k>
+  rule <k> defineTensorHelper(X, I...J, Rest) => defineTensor($1, Rest) ~> storeVal(X[I], $1) ~> defineTensorHelper(X, (I +Int 1)...J, Rest) ...</k>
       when I <Int J 
 
-  rule <k> defineArrayHelper(X, I...I, Rest) => defineArray($1, Rest) ~> storeVal(X[I], $1) ...</k>
+  rule <k> defineTensorHelper(X, I...I, Rest) => defineTensor($1, Rest) ~> storeVal(X[I], $1) ...</k>
 
 
   rule <k> X:Id => V ...</k>
@@ -145,8 +146,8 @@ module KNN
   
   syntax Exp ::= lookup(Int)
 
-  rule array(L,_)[N:Int] => lookup(L +Int N)      [structural, anywhere]
-  rule array(L,I)[N:Int, Rest:Ints] => array(L,I)[N:Int][Rest:Ints]    [structural, anywhere]                  
+  rule tensor(L,_)[N:Int] => lookup(L +Int N)      [structural, anywhere]
+  rule tensor(L,I)[N:Int, Rest:Ints] => tensor(L,I)[N:Int][Rest:Ints]    [structural, anywhere]                  
   rule <k> lookup(L) => V ...</k> <store>... L |-> V:Val ...</store>  [lookup]
 
   syntax Exp ::= storeVal(Exp, Exp) 
@@ -163,7 +164,7 @@ module KNN
         <store>... (L +Int I +Int 1) |-> (_ => V) ...</store>
 
   rule <k> storeVal(lookup(L)[I:Int], V) => storeAtVal(T +Int I, V) ...</k>
-       <store>... L |-> array(T,_) ...</store> 
+       <store>... L |-> tensor(T,_) ...</store> 
 
   syntax Exp ::= storeAtVal(Int, Val)
     
@@ -173,31 +174,31 @@ module KNN
          
 ```
 
-## Relu (For arrays)
+## Relu 
 ```k
-  rule <k> let X:Id = reluArray(Y:Id) in E => defineArray(X,Is) ~> reluArrayHelper(Y, X, Is) ~> E ... </k> 
+  rule <k> let X:Id = reluTensor(Y:Id) in E => defineTensor(X,Is) ~> reluTensorHelper(Y, X, Is) ~> E ... </k> 
        <shape>... Y |-> Is ...</shape> 
 
-  syntax Exp ::= reluArrayHelper(Exp, Exp)     
-  syntax Exp ::= reluArrayHelper(Exp, Exp, Ints)
-  syntax Exp ::= "reluArrayHelper" "(" Exp "," Exp "," Int "..." Int "," Ints ")"
-  syntax Exp ::= "reluArrayHelper" "(" Exp "," Exp "," Int "..." Int ")"
+  syntax Exp ::= reluTensorHelper(Exp, Exp)     
+  syntax Exp ::= reluTensorHelper(Exp, Exp, Ints)
+  syntax Exp ::= "reluTensorHelper" "(" Exp "," Exp "," Int "..." Int "," Ints ")"
+  syntax Exp ::= "reluTensorHelper" "(" Exp "," Exp "," Int "..." Int ")"
 
-  rule reluArrayHelper(Y, X, I:Int, Is:Ints) => reluArrayHelper(Y, X, 0 ...I, Is) 
-  rule reluArrayHelper(Y, X, I:Int) => reluArrayHelper(Y, X, 0 ...I)
+  rule reluTensorHelper(Y, X, I:Int, Is:Ints) => reluTensorHelper(Y, X, 0 ...I, Is) 
+  rule reluTensorHelper(Y, X, I:Int) => reluTensorHelper(Y, X, 0 ...I)
 
-  rule <k> reluArrayHelper(Y, X, I...J:Int, Is:Ints) => reluArrayHelper(Y[I], X[I], Is:Ints) ~> reluArrayHelper(Y, X, (I +Int 1)...J:Int, Is:Ints) ...</k>     
+  rule <k> reluTensorHelper(Y, X, I...J:Int, Is:Ints) => reluTensorHelper(Y[I], X[I], Is:Ints) ~> reluTensorHelper(Y, X, (I +Int 1)...J:Int, Is:Ints) ...</k>     
     when I <Int J
   
-  rule <k> reluArrayHelper(Y, X, I...J:Int) => reluArrayHelper(Y[I], X[I]) ~> reluArrayHelper(Y, X, (I +Int 1)...J:Int) ...</k>     
+  rule <k> reluTensorHelper(Y, X, I...J:Int) => reluTensorHelper(Y[I], X[I]) ~> reluTensorHelper(Y, X, (I +Int 1)...J:Int) ...</k>     
     when I <Int J
 
-  rule <k> reluArrayHelper(_, _, I...I:Int, _:Ints) => . ...</k>
-  rule <k> reluArrayHelper(_, _, I...I:Int) => . ...</k>
+  rule <k> reluTensorHelper(_, _, I...I:Int, _:Ints) => . ...</k>
+  rule <k> reluTensorHelper(_, _, I...I:Int) => . ...</k>
 
-  //rule reluArrayHelper(E1:Exp[I:Int], E2:Exp[J:Int]) => reluArrayHelper(fun(E1:Exp[I:Int]), fun(E2:Exp[J:Int]))
-  //context reluArrayHelper(HOLE, HOLE)
-  rule reluArrayHelper(E1:Exp[I:Int], E2:Exp[J:Int]) => let E2[J] = E1[I] in 0
+  //rule reluTensorHelper(E1:Exp[I:Int], E2:Exp[J:Int]) => reluTensorHelper(fun(E1:Exp[I:Int]), fun(E2:Exp[J:Int]))
+  //context reluTensorHelper(HOLE, HOLE)
+  rule reluTensorHelper(E1:Exp[I:Int], E2:Exp[J:Int]) => let E2[J] = E1[I] in 0
 
   rule let E:Exp[I:Int][J:Int] = E2:Exp in E3:Exp => let E:Exp[I,J] = max(E2:Exp, 0.0) in E3:Exp
 //  rule E:Exp[I:Int][Is:Ints]) => E[I, Is]) 
@@ -207,34 +208,46 @@ module KNN
 
   rule <k> 0 => . ...</k>
 
-  //rule reluArrayHelper()
+  //rule reluTensorHelper()
 ```
+## Linear Layer
+```k
 
+/*
+rule <k> let Y:Id = linear(W, X) in E => linearHelper(Y, I, J, X) ~> E ...</k> 
+     <shape>... W |-> I:Int,J:Int  ...</shape>
+
+// This is checking that the second dimension of the matrix matches the dimension of the vector
+rule <k> linearHelper(Y, I:Int, J:Int, X) => defineTensor(Y, I) ...</k>
+     <shape>... X|-> J ...</shape>     
+
+*/
+```
 
 ## Tanh
 ```k
-  rule <k> let X:Id = tanhArray(Y:Id) in E => defineArray(X,Is) ~> tanhArrayHelper(Y, X, Is) ~> E ... </k> 
+  rule <k> let X:Id = tanhTensor(Y:Id) in E => defineTensor(X,Is) ~> tanhTensorHelper(Y, X, Is) ~> E ... </k> 
        <shape>... Y |-> Is ...</shape> 
 
-  syntax Exp ::= tanhArrayHelper(Exp, Exp)     
-  syntax Exp ::= tanhArrayHelper(Exp, Exp, Ints)
-  syntax Exp ::= "tanhArrayHelper" "(" Exp "," Exp "," Int "..." Int "," Ints ")"
-  syntax Exp ::= "tanhArrayHelper" "(" Exp "," Exp "," Int "..." Int ")"
+  syntax Exp ::= tanhTensorHelper(Exp, Exp)     
+  syntax Exp ::= tanhTensorHelper(Exp, Exp, Ints)
+  syntax Exp ::= "tanhTensorHelper" "(" Exp "," Exp "," Int "..." Int "," Ints ")"
+  syntax Exp ::= "tanhTensorHelper" "(" Exp "," Exp "," Int "..." Int ")"
   syntax Exp ::= tanhItem(Exp)     
 
-  rule tanhArrayHelper(Y, X, I:Int, Is:Ints) => tanhArrayHelper(Y, X, 0 ...I, Is) 
-  rule tanhArrayHelper(Y, X, I:Int) => tanhArrayHelper(Y, X, 0 ...I)
+  rule tanhTensorHelper(Y, X, I:Int, Is:Ints) => tanhTensorHelper(Y, X, 0 ...I, Is) 
+  rule tanhTensorHelper(Y, X, I:Int) => tanhTensorHelper(Y, X, 0 ...I)
 
-  rule <k> tanhArrayHelper(Y, X, I...J:Int, Is:Ints) => tanhArrayHelper(Y[I], X[I], Is:Ints) ~> tanhArrayHelper(Y, X, (I +Int 1)...J:Int, Is:Ints) ...</k>     
+  rule <k> tanhTensorHelper(Y, X, I...J:Int, Is:Ints) => tanhTensorHelper(Y[I], X[I], Is:Ints) ~> tanhTensorHelper(Y, X, (I +Int 1)...J:Int, Is:Ints) ...</k>     
     when I <Int J
   
-  rule <k> tanhArrayHelper(Y, X, I...J:Int) => tanhArrayHelper(Y[I], X[I]) ~> tanhArrayHelper(Y, X, (I +Int 1)...J:Int) ...</k>     
+  rule <k> tanhTensorHelper(Y, X, I...J:Int) => tanhTensorHelper(Y[I], X[I]) ~> tanhTensorHelper(Y, X, (I +Int 1)...J:Int) ...</k>     
     when I <Int J
 
-  rule <k> tanhArrayHelper(_, _, I...I:Int, _:Ints) => . ...</k>
-  rule <k> tanhArrayHelper(_, _, I...I:Int) => . ...</k>
+  rule <k> tanhTensorHelper(_, _, I...I:Int, _:Ints) => . ...</k>
+  rule <k> tanhTensorHelper(_, _, I...I:Int) => . ...</k>
 
-  rule tanhArrayHelper(E1:Exp[I:Int], E2:Exp[J:Int]) => let E2[J] = tanhItem(E1[I]) in 0
+  rule tanhTensorHelper(E1:Exp[I:Int], E2:Exp[J:Int]) => let E2[J] = tanhItem(E1[I]) in 0
 
   context tanhItem(HOLE)
   rule tanhItem(E:Exp[I:Int][J:Int]) => tanhItem(E:Exp[I:Int,J:Int]) 
@@ -244,28 +257,28 @@ module KNN
 
 ## Sigmoid
 ```k
-  rule <k> let X:Id = sigmoidArray(Y:Id) in E => defineArray(X,Is) ~> sigmoidArrayHelper(Y, X, Is) ~> E ... </k> 
+  rule <k> let X:Id = sigmoidTensor(Y:Id) in E => defineTensor(X,Is) ~> sigmoidTensorHelper(Y, X, Is) ~> E ... </k> 
        <shape>... Y |-> Is ...</shape> 
 
-  syntax Exp ::= sigmoidArrayHelper(Exp, Exp)     
-  syntax Exp ::= sigmoidArrayHelper(Exp, Exp, Ints)
-  syntax Exp ::= "sigmoidArrayHelper" "(" Exp "," Exp "," Int "..." Int "," Ints ")"
-  syntax Exp ::= "sigmoidArrayHelper" "(" Exp "," Exp "," Int "..." Int ")"
+  syntax Exp ::= sigmoidTensorHelper(Exp, Exp)     
+  syntax Exp ::= sigmoidTensorHelper(Exp, Exp, Ints)
+  syntax Exp ::= "sigmoidTensorHelper" "(" Exp "," Exp "," Int "..." Int "," Ints ")"
+  syntax Exp ::= "sigmoidTensorHelper" "(" Exp "," Exp "," Int "..." Int ")"
   syntax Exp ::= sigmoidItem(Exp)     
 
-  rule sigmoidArrayHelper(Y, X, I:Int, Is:Ints) => sigmoidArrayHelper(Y, X, 0 ...I, Is) 
-  rule sigmoidArrayHelper(Y, X, I:Int) => sigmoidArrayHelper(Y, X, 0 ...I)
+  rule sigmoidTensorHelper(Y, X, I:Int, Is:Ints) => sigmoidTensorHelper(Y, X, 0 ...I, Is) 
+  rule sigmoidTensorHelper(Y, X, I:Int) => sigmoidTensorHelper(Y, X, 0 ...I)
 
-  rule <k> sigmoidArrayHelper(Y, X, I...J:Int, Is:Ints) => sigmoidArrayHelper(Y[I], X[I], Is:Ints) ~> sigmoidArrayHelper(Y, X, (I +Int 1)...J:Int, Is:Ints) ...</k>     
+  rule <k> sigmoidTensorHelper(Y, X, I...J:Int, Is:Ints) => sigmoidTensorHelper(Y[I], X[I], Is:Ints) ~> sigmoidTensorHelper(Y, X, (I +Int 1)...J:Int, Is:Ints) ...</k>     
     when I <Int J
   
-  rule <k> sigmoidArrayHelper(Y, X, I...J:Int) => sigmoidArrayHelper(Y[I], X[I]) ~> sigmoidArrayHelper(Y, X, (I +Int 1)...J:Int) ...</k>     
+  rule <k> sigmoidTensorHelper(Y, X, I...J:Int) => sigmoidTensorHelper(Y[I], X[I]) ~> sigmoidTensorHelper(Y, X, (I +Int 1)...J:Int) ...</k>     
     when I <Int J
 
-  rule <k> sigmoidArrayHelper(_, _, I...I:Int, _:Ints) => . ...</k>
-  rule <k> sigmoidArrayHelper(_, _, I...I:Int) => . ...</k>
+  rule <k> sigmoidTensorHelper(_, _, I...I:Int, _:Ints) => . ...</k>
+  rule <k> sigmoidTensorHelper(_, _, I...I:Int) => . ...</k>
 
-  rule sigmoidArrayHelper(E1:Exp[I:Int], E2:Exp[J:Int]) => let E2[J] = sigmoidItem(E1[I]) in 0
+  rule sigmoidTensorHelper(E1:Exp[I:Int], E2:Exp[J:Int]) => let E2[J] = sigmoidItem(E1[I]) in 0
 
   context sigmoidItem(HOLE)
   rule sigmoidItem(E:Exp[I:Int][J:Int]) => sigmoidItem(E:Exp[I:Int,J:Int]) 
