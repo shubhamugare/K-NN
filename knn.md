@@ -33,6 +33,10 @@ module KNN-SYNTAX
                    | "initArray" "(" Ints ")" 
                    | "relu" "(" Exp ")"  
                    | "reluArray" "(" Exp ")"
+                   | "tanh" "(" Exp ")"  
+                   | "tanhArray" "(" Exp ")"  
+                   | "sigmoid" "(" Exp ")"  
+                   | "sigmoidArray" "(" Exp ")"  
 
                    
 
@@ -206,6 +210,69 @@ module KNN
   //rule reluArrayHelper()
 ```
 
+
+## Tanh
+```k
+  rule <k> let X:Id = tanhArray(Y:Id) in E => defineArray(X,Is) ~> tanhArrayHelper(Y, X, Is) ~> E ... </k> 
+       <shape>... Y |-> Is ...</shape> 
+
+  syntax Exp ::= tanhArrayHelper(Exp, Exp)     
+  syntax Exp ::= tanhArrayHelper(Exp, Exp, Ints)
+  syntax Exp ::= "tanhArrayHelper" "(" Exp "," Exp "," Int "..." Int "," Ints ")"
+  syntax Exp ::= "tanhArrayHelper" "(" Exp "," Exp "," Int "..." Int ")"
+  syntax Exp ::= tanhItem(Exp)     
+
+  rule tanhArrayHelper(Y, X, I:Int, Is:Ints) => tanhArrayHelper(Y, X, 0 ...I, Is) 
+  rule tanhArrayHelper(Y, X, I:Int) => tanhArrayHelper(Y, X, 0 ...I)
+
+  rule <k> tanhArrayHelper(Y, X, I...J:Int, Is:Ints) => tanhArrayHelper(Y[I], X[I], Is:Ints) ~> tanhArrayHelper(Y, X, (I +Int 1)...J:Int, Is:Ints) ...</k>     
+    when I <Int J
+  
+  rule <k> tanhArrayHelper(Y, X, I...J:Int) => tanhArrayHelper(Y[I], X[I]) ~> tanhArrayHelper(Y, X, (I +Int 1)...J:Int) ...</k>     
+    when I <Int J
+
+  rule <k> tanhArrayHelper(_, _, I...I:Int, _:Ints) => . ...</k>
+  rule <k> tanhArrayHelper(_, _, I...I:Int) => . ...</k>
+
+  rule tanhArrayHelper(E1:Exp[I:Int], E2:Exp[J:Int]) => let E2[J] = tanhItem(E1[I]) in 0
+
+  context tanhItem(HOLE)
+  rule tanhItem(E:Exp[I:Int][J:Int]) => tanhItem(E:Exp[I:Int,J:Int]) 
+  rule let E:Exp[I:Int][J:Int] = tanhItem(E2:Exp) in E3:Exp => let E:Exp[I,J] = tanhItem(E2:Exp) in E3:Exp
+
+```
+
+## Sigmoid
+```k
+  rule <k> let X:Id = sigmoidArray(Y:Id) in E => defineArray(X,Is) ~> sigmoidArrayHelper(Y, X, Is) ~> E ... </k> 
+       <shape>... Y |-> Is ...</shape> 
+
+  syntax Exp ::= sigmoidArrayHelper(Exp, Exp)     
+  syntax Exp ::= sigmoidArrayHelper(Exp, Exp, Ints)
+  syntax Exp ::= "sigmoidArrayHelper" "(" Exp "," Exp "," Int "..." Int "," Ints ")"
+  syntax Exp ::= "sigmoidArrayHelper" "(" Exp "," Exp "," Int "..." Int ")"
+  syntax Exp ::= sigmoidItem(Exp)     
+
+  rule sigmoidArrayHelper(Y, X, I:Int, Is:Ints) => sigmoidArrayHelper(Y, X, 0 ...I, Is) 
+  rule sigmoidArrayHelper(Y, X, I:Int) => sigmoidArrayHelper(Y, X, 0 ...I)
+
+  rule <k> sigmoidArrayHelper(Y, X, I...J:Int, Is:Ints) => sigmoidArrayHelper(Y[I], X[I], Is:Ints) ~> sigmoidArrayHelper(Y, X, (I +Int 1)...J:Int, Is:Ints) ...</k>     
+    when I <Int J
+  
+  rule <k> sigmoidArrayHelper(Y, X, I...J:Int) => sigmoidArrayHelper(Y[I], X[I]) ~> sigmoidArrayHelper(Y, X, (I +Int 1)...J:Int) ...</k>     
+    when I <Int J
+
+  rule <k> sigmoidArrayHelper(_, _, I...I:Int, _:Ints) => . ...</k>
+  rule <k> sigmoidArrayHelper(_, _, I...I:Int) => . ...</k>
+
+  rule sigmoidArrayHelper(E1:Exp[I:Int], E2:Exp[J:Int]) => let E2[J] = sigmoidItem(E1[I]) in 0
+
+  context sigmoidItem(HOLE)
+  rule sigmoidItem(E:Exp[I:Int][J:Int]) => sigmoidItem(E:Exp[I:Int,J:Int]) 
+  rule let E:Exp[I:Int][J:Int] = sigmoidItem(E2:Exp) in E3:Exp => let E:Exp[I,J] = sigmoidItem(E2:Exp) in E3:Exp
+
+```
+
 ## Min and Max
 
 ```k
@@ -221,6 +288,10 @@ rule max(A:Float, B:Float) => B
 
 rule max(A:Float, B:Float) => A 
       when A >=Float B
+
+rule tanhItem(X:Float) => (expFloat(2.0 *Float X) -Float 1.0) /Float (expFloat(2.0 *Float X) +Float 1.0)
+
+rule sigmoidItem(X:Float) => (1.0 /Float (1.0 +Float expFloat(0.0 -Float X)))
 
 ```
 

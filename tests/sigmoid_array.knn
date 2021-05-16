@@ -1,0 +1,4 @@
+let t = initArray(2, 3) in 
+let t[1,2] = 3.0 in
+(let u = sigmoidArray(t) in 
+(2.0*u[1,2]))
