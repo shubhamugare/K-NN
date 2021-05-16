@@ -1,0 +1,17 @@
+<T>
+  <k>
+    0.36000000000000000e2 ~> .
+  </k>
+  <env>
+    .Map
+  </env>
+  <store>
+    .Map
+  </store>
+  <nextLoc>
+    0
+  </nextLoc>
+  <shape>
+    .Map
+  </shape>
+</T>
