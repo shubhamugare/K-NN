@@ -1,0 +1,12 @@
+let X = initTensor(2) in 
+let W = initTensor(3, 2) in
+let X[0] = 4.0 in
+let X[1] = 3.0 in 
+(let W[0, 0] = 1.0 in
+let W[0, 1] = -1.0 in
+let W[1, 0] = 2.0 in
+let W[1, 1] = 3.0 in
+(let W[2, 0] = -1.0 in
+let W[2, 1] = 2.0 in
+(let Y = linear(W, X) in 
+(Y[0]))))
