@@ -22,10 +22,17 @@ Specifically, KNN supports the following features:
     for convenient 
     slicing, reshaping or other dimension dependent operations on tensors.
 *   Built-in Tensor Transformers. We implemented several commonly used transformers, which takes tensor(s) as input
-    and output another tensor. The list is shown below.
+    and output another tensor. The functions include the definition and assignment of a tensor, 
+    the definition of a linear layer in the neural network,
+    and activation functions Relu, Sigmoid, and Tanh.
     
 
 ## Syntax
+
+We support the simple language constructs that could define a typical neural network: 
+constants, variables, tensors, declarations (let-in), arithmetic operations, and functions.
+
+First we use the existing DOMAINS, KVAR and FLOAT syntax. 
 
 ```k
 require "substitution.md"
@@ -36,7 +43,18 @@ module KNN-SYNTAX
   imports KVAR-SYNTAX
   imports FLOAT-SYNTAX
 
-  syntax Id ::= "Name" [token] | "tensor" [token]
+```
+
+Here we define the expressions in the program. Integers (comma-separated integers) are used for the shape and index of the tensors, and Floats (comma-separated floats) are used as the elements in tensors
+and also the arithmetic on them.  We let each tensor to be associated with an `Id` stored in the enviroment,
+and we employ the let-in clause for scoping. 
+During the complication, we use a special identifier `tensor` to denote that an element is a tensor.
+
+We also define accessing an element in the tensor in the same way as accessing multi-dimensional arrays.
+
+
+```k
+  syntax Id ::= "tensor" [token]
 
   syntax Exp ::= Float
                | Int
@@ -50,8 +68,18 @@ module KNN-SYNTAX
                > Exp "+" Exp           [strict, left]
                > "let" Exp "=" Exp "in" Exp  [strict(2)]
                >  "let" Exp "=" Func "in" Exp 
-  
 
+  syntax FloatList ::= "[" Floats "]"
+  syntax Floats ::= Float 
+                  | Float "," Floats
+  syntax Ints ::= Int 
+                  | Int "," Ints
+```
+  
+### Functions
+We define the common used functions in defining neural networks.
+
+```k
   syntax Func ::=  "initTensor" "(" Ints ")" 
                    | "relu" "(" Exp ")"  
                    | "reluTensor" "(" Exp ")"
@@ -63,11 +91,6 @@ module KNN-SYNTAX
 
                    
 
-  syntax FloatList ::= "[" Floats "]"
-  syntax Floats ::= Float 
-                  | Float "," Floats
-  syntax Ints ::= Int 
-                  | Int "," Ints
 endmodule
 ```
 
@@ -94,50 +117,39 @@ We store their references in \<env\>, and lookup their raw values in \<store\>.
                   <store> .Map </store>
                   <nextLoc> 0 </nextLoc>
                   <shape> .Map </shape>
-                //  <tensors color="green">        
-                //     <tensorData multiplicity="*" type="Map" color="green">
-                //        <tensorName color="green"> Name </tensorName>
-                //        <size color="green"> .List </size>
-                //       <val color="green"> .List </val>
-                //        <tempval color="olive"> .List </tempval>
-                //     </tensorData>
-                //  </tensors>
                 </T>
 ```
 
 ## Basic operations
+
+For simple float/int scalars, we substitute their value in the final expression.
+For arithmetic on floats, we use the built-in functions on floats.
+
+
+
 ```k
   syntax KResult ::= Float | Int 
 
   // Scalar in let
   rule let X:Id = E1:Float in E2:Exp => E2[E1 / X] 
   rule let X:Id = E1:Int in E2:Exp => E2[E1 / X] 
- // rule <k> let X:Id = E:Exp in E1:Exp => storeVal(X, E) ~> E1...</k>
+  // rule <k> let X:Id = E:Exp in E1:Exp => storeVal(X, E) ~> E1...</k>
 
   rule I1 * I2 => I1 *Float I2
   rule I1 + I2 => I1 +Float I2
 
-  // Tensor in let
-  // syntax KItem ::= toList(Id, Floats) // add Id in toList to track which tensor to modify
-
-  // rule <k> ( let X:Id = tensor ( Si:Ints , [Fl:Floats] ) in E2:Exp ) => toList(X, Fl) ~> E2 ...</k> 
-  //       <tensors>...
-  //           (.Bag =>         
-  //            <tensorData>
-  //               <tensorName> X </tensorName>
-  //               <size> ListItem(Si) </size>
-  //               <val> .List </val>
-  //               ...
-  //            </tensorData>
-  //            )
-  //       ...
-  //      </tensors>
-  //       
-  // rule <k> toList(X, F1:Float) => . ... </k> <tensorData> <tensorName> X </tensorName> <val> ... .List => ListItem(F1)  </val> ... </tensorData> 
-  // rule <k> toList(X, (F1:Float, FL:Floats)) => toList(X, FL) ... </k> <tensorData> <tensorName> X </tensorName> <val> ... .List => ListItem(F1) </val> ... </tensorData>  // append at the end
 ```
 
 ## Tensor 
+
+Here we initialize a tensors by storing a reference (a value indicating the starting location 
+of the elements in \<store\>)
+ of the tensor in \<env\>. Since the tensor can be multi-dimensional, each elements following 
+the referece can be references to sub-tensors.
+We allow initialize the tensor with a given shape and later assign value to some elements in the tensor.
+By default, `initTensor` initialize all the elements to `0.0`.
+This will be very useful for defining sparse tensors, where only a few elements are non-zero.
+
 ```k
   
   syntax Val ::= tensor(Int, Int) | Float | Ints 
@@ -201,6 +213,18 @@ We store their references in \<env\>, and lookup their raw values in \<store\>.
 ```
 
 ## Relu 
+
+We define relu by processing every element from the input tensor and assign to the
+output tensor. First we initialize the output tensor, and then
+ assign to every element in the new tensor.
+We apply the `reluTensorHelper` function
+recursively until we go through all the elements. 
+
+In short, the following code lets each element X[I]=max(Y[I],0), where 
+X is the output tensor  and Y is the input tensor. The shape of X and Y will be the same.
+
+
+
 ```k
   rule <k> let X:Id = reluTensor(Y:Id) in E => defineTensor(X,Is) ~> reluTensorHelper(Y, X, Is) ~> E ... </k> 
        <shape>... Y |-> Is ...</shape> 
@@ -237,6 +261,14 @@ We store their references in \<env\>, and lookup their raw values in \<store\>.
   //rule reluTensorHelper()
 ```
 ## Linear Layer
+
+The following code computes the output of a linear layer in the neural network.
+It follows the matrix-vector product--given  as input a weights tensor W of shape (I,J), 
+and a 1-dimensional tensor 
+X of shape (J), it output the output tensor WX of shape (I)
+
+The implementation is similar to Relu: we first initialize the tensor to shape (I),
+and then assign to each element in the tensor.
 ```k
   
   syntax Exp ::= linearHelper(Id, Int, Int, Id, Id)
@@ -265,6 +297,11 @@ We store their references in \<env\>, and lookup their raw values in \<store\>.
 
 
 ## Tanh
+
+Tanh is similar to Relu. We proceed each element
+by X[I]=(exp(Y[I])-exp(-Y[I]))/(exp(Y[I])+exp(-Y[I])), where 
+X is the output tensor and Y is the input tensor. The shape of X and Y will be the same.
+
 ```k
   rule <k> let X:Id = tanhTensor(Y:Id) in E => defineTensor(X,Is) ~> tanhTensorHelper(Y, X, Is) ~> E ... </k> 
        <shape>... Y |-> Is ...</shape> 
@@ -296,6 +333,10 @@ We store their references in \<env\>, and lookup their raw values in \<store\>.
 ```
 
 ## Sigmoid
+
+Sigmoid is similar to Relu. We proceed each element
+by X[I]=1/(1-exp(-Y[I])), where 
+X is the output tensor and Y is the input tensor. The shape of X and Y will be the same.
 ```k
   rule <k> let X:Id = sigmoidTensor(Y:Id) in E => defineTensor(X,Is) ~> sigmoidTensorHelper(Y, X, Is) ~> E ... </k> 
        <shape>... Y |-> Is ...</shape> 
@@ -354,6 +395,8 @@ We store their references in \<env\>, and lookup their raw values in \<store\>.
 ```
 
 ## Min and Max
+
+The following are useful auxiliary functions for min, max, tanh, sigmoid on a scalar float.
 
 ```k
 
