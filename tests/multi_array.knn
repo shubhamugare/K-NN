@@ -1,4 +1,0 @@
-let t = initArray(4, 5) in 
-let t[1,2] = 3.0 in
-let b = 5.0 in 
-t[1,2]*2.0
