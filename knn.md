@@ -37,7 +37,8 @@ module KNN-SYNTAX
                    | "tanh" "(" Exp ")"  
                    | "tanhTensor" "(" Exp ")"  
                    | "sigmoid" "(" Exp ")"  
-                   | "sigmoidTensor" "(" Exp ")"  
+                   | "sigmoidTensor" "(" Exp ")"
+                   | "linear" "(" Id "," Id ")"  
 
                    
 
@@ -283,6 +284,33 @@ rule <k> linearHelper(Y, I:Int, J:Int, X) => defineTensor(Y, I) ...</k>
   context sigmoidItem(HOLE)
   rule sigmoidItem(E:Exp[I:Int][J:Int]) => sigmoidItem(E:Exp[I:Int,J:Int]) 
   rule let E:Exp[I:Int][J:Int] = sigmoidItem(E2:Exp) in E3:Exp => let E:Exp[I,J] = sigmoidItem(E2:Exp) in E3:Exp
+
+```
+
+## Linear Layer
+```k
+  
+  syntax Exp ::= linearHelper(Id, Int, Int, Id, Id)
+  syntax Exp ::= "linearHelper" "(" Id "," Int "..." Int "," Int "," Id "," Id ")"
+  syntax Exp ::= "linearHelper" "(" Id "[" Int "]" "," Int "..." Int "," Id "[" Int "]" "," Id ")" 
+  syntax Exp ::= linearHelper(Exp, Exp, Exp)
+
+  rule <k> let Y:Id = linear(W, X) in E => defineTensor(Y, I) ~> linearHelper(Y, I, J, W, X) ~> E ...</k> 
+       <shape>... W |-> I:Int,J:Int  ...</shape>
+
+  rule linearHelper(Y, I:Int, J:Int, W, X) => linearHelper(Y, 0 ...I, J, W, X) 
+       
+  rule linearHelper(Y, I1:Int...I2:Int, J:Int, W, X) => linearHelper(Y[I1], 0 ...J, W[I1], X) ~> linearHelper(Y, (I1 +Int 1)...I2:Int, J:Int, W, X) 
+        when I1 <Int I2
+
+  rule linearHelper(_, I:Int...I:Int, _:Int, _:Id, _:Id) => .
+
+  rule linearHelper(Y[I1], J1...J2, W[I1], X) => linearHelper(Y[I1], W[I1][J1], X[J1]) ~> linearHelper(Y[I1], (J1 +Int 1)...J2, W[I1], X)
+      when J1 <Int J2
+
+  rule linearHelper(_:Id[_:Int], J...J, _:Id[_:Int], _:Id) => .
+
+  rule linearHelper(E1, E2, E3) => let E1 = E1 + (E2*E3) in 0
 
 ```
 
