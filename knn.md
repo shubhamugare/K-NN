@@ -4,6 +4,27 @@ Shubham Ugare (UIUC)
 
 Zixin Huang (UIUC)
 
+## Abstract
+
+This is the **K** semantic definition of K-NN, a language 
+for neural networks. We defined several common used operations
+in the ML domain. Future works could extend the semantics 
+and tailor them for verifying different properties of 
+neural networks.
+
+Specifically, KNN supports the following features:
+
+*   Tensors. Tensors are essentially multi-dimensional arrays with additional shape information. 
+    We store tensor references  in <env>, and we look up the tensor values in <store>. The references are values indicating 
+    the locations where the tensor elements start in <store>. Similar to multi-dimensional arrays in simple language, the tensor
+    elements can also be references, indicating
+    the locations for sub-tensors. Besides the values, we store the shape information in <shape>, 
+    for convenient 
+    slicing, reshaping or other dimension dependent operations on tensors.
+*   Built-in Tensor Transformers. We implemented several commonly used transformers, which takes tensor(s) as input
+    and output another tensor. The list is shown below.
+    
+
 ## Syntax
 
 ```k
@@ -60,6 +81,10 @@ module KNN
 ```
 
 ## Configuration
+To store additional shape information tensors, we add \<shape\> in the configuration, 
+which is a map from tensor IDs to shape (comma separated integers). The other configurations
+are typical to sequential languages. For tensors, we implement them similar to multidimensional arrays.
+We store their references in \<env\>, and lookup their raw values in \<store\>.
 
 ```k
   configuration <T color="red">
