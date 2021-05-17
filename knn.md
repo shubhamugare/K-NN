@@ -56,18 +56,21 @@ We also define accessing an element in the tensor in the same way as accessing m
 ```k
   syntax Id ::= "tensor" [token]
 
+
   syntax Exp ::= Float
                | Int
-               | Id          
-               | Exp "[" Ints "]"      [strict(1)]      
-               | "(" Exp ")"           [bracket]
-               | "max" "(" Exp "," Exp ")"  [strict]
+               | Id
+               | "let" Exp "=" Exp "in" Exp  [strict(2), left]
+               | "let" Exp "=" Func "in" Exp  [left]  
+               | "(" Exp ")"           [bracket]         
+               > Exp "[" Ints "]"      [strict(1), left]                     
+               > "max" "(" Exp "," Exp ")"  [strict]
                | "min" "(" Exp "," Exp ")"  [strict]
                | "ArgMax" "(" Exp ")"       // expects a vector
                > Exp "*" Exp           [strict, left]
                > Exp "+" Exp           [strict, left]
-               > "let" Exp "=" Exp "in" Exp  [strict(2)]
-               >  "let" Exp "=" Func "in" Exp 
+
+            
 
   syntax FloatList ::= "[" Floats "]"
   syntax Floats ::= Float 

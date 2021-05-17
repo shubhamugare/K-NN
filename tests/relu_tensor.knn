@@ -1,4 +1,4 @@
 let t = initTensor(2, 3) in 
 let t[1,2] = 3.0 in
-(let u = reluTensor(t) in 
-(2.0*u[1,2]))
+let u = reluTensor(t) in 
+2.0*u[1,2]
